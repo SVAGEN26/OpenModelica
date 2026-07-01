@@ -577,6 +577,8 @@ constant DebugFlag DUMP_MIDCODE = DEBUG_FLAG(204, "dumpMidCode", false,
   "Dumps MidCode after generation in a human-readable format.");
 constant DebugFlag JIT_SIMULATE = DEBUG_FLAG(205, "jitSimulate", false,
   "Simulate models by JIT-compiling the generated C via LLVM (ORC) and running it in-process, instead of building and running a native executable.");
+constant DebugFlag LLVM_AOT = DEBUG_FLAG(206, "llvm_aot", false,
+  "AoT: after MidToLLVM lowers a MetaModelica function under -d=jit_eval_func, write the LLVM module to <name>.bc on disk instead of JIT-executing it. Used for the NativeMetaModelicaCompiler experiment.");
 
 public
 // CONFIGURATION FLAGS

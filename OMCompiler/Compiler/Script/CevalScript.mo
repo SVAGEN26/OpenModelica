@@ -2332,8 +2332,14 @@ algorithm
         EXT_LLVM.initGen(name);
         /*Generate LLVM IR in memory*/
         MidToLLVM.genProgram(midCodeProgram);
-        /* JIT compile. Return a newval. */
-
+        /* AoT path (NativeMetaModelicaCompiler experiment): write the
+         * freshly-lowered module to <name>.bc and return without JITing.
+         * The caller gets a placeholder value; the disk artifact is the
+         * point of the exercise. */
+        if Flags.isSet(Flags.LLVM_AOT) then
+          _ := EXT_LLVM.writeBitcodeToFile(name + ".bc");
+          newval := Values.NORETCALL();
+        else
         /*JIT compile. Return a newval.*/
         newval := match midCodeProgram.functions
           local MidCode.Function H; list<MidCode.Function> T;
@@ -2342,6 +2348,7 @@ algorithm
             Error.addInternalError("Error occured when attempting JIT evaluation", sourceInfo());
           then fail();
         end match;
+        end if;
        then (cache,newval);
     // try function interpretation
     case (cache, env, DAE.CALL(path = funcpath, attr = DAE.CALL_ATTR(builtin = false)), vallst, msg)
