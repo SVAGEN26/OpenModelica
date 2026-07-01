@@ -2146,6 +2146,48 @@ algorithm
       list<String> pubVarNames, proVarNames, varNames;
       DAE.Type ty;
       Boolean bIsCompleteFunction;
+      // Locals for the LLVM_AOT interceptor below.
+      DAE.Function daeMainFunction;
+      MidCode.Program midCodeProgram;
+      SimCodeFunction.Function simMainFunction;
+      String name;
+      list<DAE.Exp> literals;
+      list<DAE.Function> daeElements;
+      list<DAE.Type> metarecordTypes;
+      list<SimCodeFunction.Function> simfns;
+      list<SimCodeFunction.RecordDeclaration> recordDecls;
+      list<String> includeDirs;
+      list<String> includes;
+      list<String> libPaths;
+      list<String> libs;
+
+    // NativeMetaModelicaCompiler AoT interceptor: run the DAE->MidCode->LLVM
+    // pipeline for any non-partial user function and dump bitcode to disk.
+    // Placed BEFORE cevalKnownExternalFuncs and BEFORE the record-constructor
+    // shortcut so that functions returning arrays / metaarrays and functions
+    // taking function-typed args (which the classical eval paths intercept
+    // or reject) also get lowered when -d=llvm_aot is on. Returns
+    // Values.NORETCALL(); the disk artifact is the point of the flag.
+    case (cache, env, DAE.CALL(path = funcpath, attr = DAE.CALL_ATTR(builtin = false)), vallst, msg)
+      guard Flags.isSet(Flags.LLVM_AOT)
+      algorithm
+        failure(cevalIsExternalObjectConstructor(cache, funcpath, env, msg));
+        try
+          name := generateFunctionName(funcpath);
+          (cache, daeMainFunction, daeElements, metarecordTypes) := collectDependencies(cache, env, funcpath);
+          (daeElements, literals) := SimCodeFunctionUtil.findLiterals(daeMainFunction::daeElements);
+          (simMainFunction::simfns, recordDecls, includes, includeDirs, libs, libPaths) := SimCodeFunctionUtil.elaborateFunctions(SymbolTable.getAbsyn(), daeElements, metarecordTypes, literals, {});
+          midCodeProgram := DAEToMid.daeProgramToMid(name, simMainFunction::simfns, recordDecls);
+          EXT_LLVM.initGen(name);
+          MidToLLVM.genProgram(midCodeProgram);
+          _ := EXT_LLVM.writeBitcodeToFile(name + ".bc");
+        else
+          // Any codegen failure (unsupported construct) is not fatal --
+          // the batch driver just skips this function so subsequent calls
+          // still produce their .bc.
+          Error.addInternalError("llvm_aot: skipped " + AbsynUtil.pathString(funcpath) + " (codegen failure)", sourceInfo());
+        end try;
+      then (cache, Values.NORETCALL());
 
     // External functions that are "known" should be evaluated without compilation, e.g. all math functions
     case (cache, env, (DAE.CALL(path = funcpath)), vallst, msg)
