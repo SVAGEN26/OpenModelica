@@ -404,8 +404,8 @@ install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/Resources/nls
 # to bundle that instead of downloading, e.g. for local development against an unreleased version.
 set(MODELICA_LS_DIR ""
     CACHE PATH "Directory containing a locally built modelica-language-server (server.js and WASM files). Overrides the downloaded release when set.")
-set(MODELICA_LS_VERSION "0.3.0" CACHE STRING "modelica-language-server release version to download")
-set(MODELICA_LS_TGZ_SHA256 "f875f9dbf473e19d96bfff8abd8c340ce1ca351b38b3a02b0ed7d915cfb222aa"
+set(MODELICA_LS_VERSION "0.3.1" CACHE STRING "modelica-language-server release version to download")
+set(MODELICA_LS_TGZ_SHA256 "36542ef4223a9b0810714ef04e196652201a151b60e765735923cc4645fc2788"
     CACHE STRING "Expected SHA256 of the openmodelica-modelica-language-server-${MODELICA_LS_VERSION}.tgz release asset")
 
 if(MODELICA_LS_DIR AND EXISTS "${MODELICA_LS_DIR}/server.js")
